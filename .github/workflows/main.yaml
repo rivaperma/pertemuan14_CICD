@@ -3,36 +3,62 @@ on:
   push:
     branches:
       - main
-
 jobs:
   test:
+    name: Functional Test (${{ matrix.browser }})
+    permissions: write-all
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        browser: [firefox, chrome, edge]
+        include:
+          - browser: firefox
+            image: selenium/standalone-firefox:latest
+          - browser: chrome
+            image: selenium/standalone-chrome:latest
+          - browser: edge
+            image: selenium/standalone-edge:latest
     steps:
-      - name: Checkout code
+      - name: Checkout the repo
         uses: actions/checkout@v4
-
-      - name: Selenium Preparation
+      
+      - name: Create isolated network
+        run: docker network create --driver bridge isolated
+        
+      - name: Deploy AUT
+        run: docker build -t my-php-site:latest .
+        
+      - name: Run AUT
+        run: docker run --network=isolated -p 80:80 --name docker-apache -t -d my-php-site:latest
+        
+      - name: Get AUT URL
         run: |
-          docker run -d --network="host" -v /dev/shm:/dev/shm --name selenium-container selenium/standalone-${{ matrix.browser }}:latest
-          sleep 15
+          URL=http://$(ip -f inet -o addr show docker0 | awk '{print $4}' | cut -d '/' -f 1)
+          echo "URL=$URL" >> $GITHUB_ENV
+          
+      - name: Check AUT Url
+        run: curl ${{ env.URL }}
+        
+      - name: Selenium Preparation
+        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name selenium-node ${{ matrix.image }}
 
-      - name: Install dependencies
+      - name: Wait for Selenium Hub
+        run: sh wait.sh
+
+      - name: Check the Hub
+        run: curl http://localhost:4444/ui
+        
+      - name: Install Selenium client
         run: pip install -U selenium
 
       - name: Run test
-        run: python tests/hello_aut.py http://localhost ${{ matrix.browser }}
-      
-      - name: Upload Artifact
-        if: always()
+        run: python tests/hello_aut.py ${{ env.URL }} ${{ matrix.browser }}
+        
+      - name: 'Upload Artifact'
         uses: actions/upload-artifact@v4
         with:
           name: Screenshot-${{ matrix.browser }}
           path: screenshot.png
-
-      - name: Stop Docker
-        if: always()
-        run: docker stop selenium-container || true
+          
+      - name: stop docker
+        run: docker stop docker-apache
