@@ -3,33 +3,30 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 class AutTest(unittest.TestCase):
-
-def setUp(self):
-    browser_name = sys.argv[2] if len(sys.argv) > 2 else "firefox"
-    options = webdriver.FirefoxOptions() # Default Firefox
-    
-    if browser_name == "chrome":
-        options = webdriver.ChromeOptions()
-    elif browser_name == "edge":
-        options = webdriver.EdgeOptions()
+    def setUp(self):
+        browser_name = sys.argv[2] if len(sys.argv) > 2 else "firefox"
         
-    options.add_argument('--ignore-ssl-errors=yes')
-    options.add_argument('--ignore-certificate-errors')
-    server = 'http://localhost:4444'
-    self.browser = webdriver.Remote(command_executor=server, options=options)
-    self.addCleanup(self.browser.quit)
-
-    def test_homepage(self):
-        if len(sys.argv) > 1:
-            url = sys.argv[1]
+        # Inisialisasi options berdasarkan browser
+        if browser_name == "chrome":
+            options = webdriver.ChromeOptions()
+        elif browser_name == "edge":
+            options = webdriver.EdgeOptions()
         else:
-            url = "http://localhost"
+            options = webdriver.FirefoxOptions()
+            
+        options.add_argument('--ignore-ssl-errors=yes')
+        options.add_argument('--ignore-certificate-errors')
+        server = 'http://localhost:4444'
+        self.browser = webdriver.Remote(command_executor=server, options=options)
+        self.addCleanup(self.browser.quit)
 
+    # Indentasi diperbaiki: sejajar dengan setUp
+    def test_homepage(self):
+        url = sys.argv[1] if len(sys.argv) > 1 else "http://localhost"
         self.browser.get(url)
         self.browser.save_screenshot('screenshot.png')
         expected_result = "Welcome back, Guest!"
         actual_result = self.browser.find_element(By.TAG_NAME, 'p')
-
         self.assertIn(expected_result, actual_result.text)
 
 if __name__ == '__main__':
