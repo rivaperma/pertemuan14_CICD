@@ -14,10 +14,15 @@ class AutTest(unittest.TestCase):
         else:
             options = webdriver.FirefoxOptions()
             
-        options.add_argument('--ignore-ssl-errors=yes')
-        options.add_argument('--ignore-certificate-errors')
-        server = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:4444"
-        self.browser = webdriver.Remote(command_executor=server, options=options)
+        for i in range(3): 
+            try:
+                self.browser = webdriver.Remote(command_executor=server, options=options)
+                break
+            except Exception as e:
+                if i == 2: raise e
+                import time
+                time.sleep(5) # Tunggu 5 detik jika gagal
+        
         self.addCleanup(self.browser.quit)
 
     # Indentasi diperbaiki: sejajar dengan setUp
