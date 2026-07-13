@@ -18,8 +18,7 @@ jobs:
         run: docker network create isolated
 
       - name: Selenium Preparation
-        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name selenium-standalone selenium/standalone-firefox-chrome-edge:latest
-
+        run: docker run -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name selenium-standalone selenium/standalone-firefox:latest
       - name: Wait for Selenium Hub
         run: sh wait.sh
 
