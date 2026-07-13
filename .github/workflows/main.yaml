@@ -11,14 +11,31 @@ jobs:
       matrix:
         browser: [firefox, chrome, edge] 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create Network
+        run: docker network create isolated
+
+      - name: Selenium Preparation
+        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name selenium-standalone selenium/standalone-firefox-chrome-edge:latest
+
+      - name: Wait for Selenium Hub
+        run: sh wait.sh
+
+      - name: Install Selenium client
+        run: pip install -U selenium
+
       - name: Run test
-        run: python tests/hello_aut.py ${{ env.URL }} ${{ matrix.browser }}
+        run: python tests/hello_aut.py http://localhost ${{ matrix.browser }}
       
       - name: Upload Artifact
+        if: always() 
         uses: actions/upload-artifact@v4
         with:
           name: Screenshot-${{ matrix.browser }} 
           path: screenshot.png
 
-      - name: Selenium Preparation
-        run: docker run --network=isolated -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name firefox-standalone selenium/standalone-firefox-chrome-edge:latest
+      - name: Stop Docker
+        if: always()
+        run: docker stop selenium-standalone || true
