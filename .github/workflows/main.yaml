@@ -8,6 +8,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         browser: [firefox, chrome, edge] 
     steps:
@@ -15,6 +16,11 @@ jobs:
         uses: actions/checkout@v4
 
       # Container name dibuat unik per browser
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install selenium
+
       - name: Selenium Preparation
         run: |
           # Gunakan variabel port berdasarkan browser
@@ -28,7 +34,7 @@ jobs:
       - name: Run test
         # Gunakan port dinamis tadi untuk mengakses Selenium
         run: python tests/hello_aut.py http://localhost:${{ env.TEST_PORT }} ${{ matrix.browser }}
-        
+
       - name: Wait for Selenium Hub
         run: sh wait.sh
 
