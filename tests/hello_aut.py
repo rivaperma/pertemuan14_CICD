@@ -16,7 +16,7 @@ class AutTest(unittest.TestCase):
             
         options.add_argument('--ignore-ssl-errors=yes')
         options.add_argument('--ignore-certificate-errors')
-        server = 'http://localhost:4444'
+        server = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:4444"
         self.browser = webdriver.Remote(command_executor=server, options=options)
         self.addCleanup(self.browser.quit)
 

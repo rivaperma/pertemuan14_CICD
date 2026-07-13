@@ -17,8 +17,18 @@ jobs:
       # Container name dibuat unik per browser
       - name: Selenium Preparation
         run: |
-          docker run -d -p 4444:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name selenium-${{ matrix.browser }} selenium/standalone-${{ matrix.browser }}:latest
+          # Gunakan variabel port berdasarkan browser
+          PORT=4444
+          if [ "${{ matrix.browser }}" == "chrome" ]; then PORT=4445; fi
+          if [ "${{ matrix.browser }}" == "edge" ]; then PORT=4446; fi
+          
+          docker run -d -p $PORT:4444 -p 7900:7900 -v /dev/shm:/dev/shm --name selenium-${{ matrix.browser }} selenium/standalone-${{ matrix.browser }}:latest
+          echo "TEST_PORT=$PORT" >> $GITHUB_ENV
 
+      - name: Run test
+        # Gunakan port dinamis tadi untuk mengakses Selenium
+        run: python tests/hello_aut.py http://localhost:${{ env.TEST_PORT }} ${{ matrix.browser }}
+        
       - name: Wait for Selenium Hub
         run: sh wait.sh
 
